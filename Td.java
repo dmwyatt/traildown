@@ -28,7 +28,7 @@ public class Td {
 		String d6fn = "true_grit.mov";
 		String d6id = "True Grit";	
 		
-		ExecutorService downloadPool = Executors.newFixedThreadPool(2); //Two simultaneous downloads
+//		ExecutorService downloadPool = Executors.newFixedThreadPool(2); //Two simultaneous downloads
 //		Downloader downloadJob4 = new Downloader(new DownloadMe(d4url, d4fn, d4id));
 //		downloadPool.execute(downloadJob4);
 //		
@@ -40,6 +40,10 @@ public class Td {
 //		
 //		Downloader downloadJob3 = new Downloader(new DownloadMe(d3url, d3fn, d3id));
 //		downloadPool.execute(downloadJob3);
-
+		
+		String url = "http://www.hd-trailers.net/movie/2012/";
+		
+		MoviePageParse movieParser = new MoviePageParse(url);
+//		System.out.println(movieParser.getDocumentTitle());
 	}
 }
