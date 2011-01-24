@@ -1,3 +1,6 @@
+package traildown;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 
 import org.jsoup.nodes.Element;
@@ -11,7 +14,22 @@ public class LatestPageParse extends HtmlParse {
 		super(url);
 		// TODO Auto-generated constructor stub
 		fetchMovieUrls(url);
-	}	
+	}
+	
+	public ArrayList<String> getMovieUrls() {
+		ArrayList<String> urls = new ArrayList<String>(movieUrls.values());
+		
+		return urls;
+//		try {
+//			return (ArrayList<String>) movieUrls.values();
+//		}catch (Exception e) {
+//			for (String s:movieUrls.values()) {
+//				System.out.println(s);
+//			}
+//			e.printStackTrace();
+//		}
+//		return null;
+	}
 	
 	private void fetchMovieUrls(String url) {
 		Elements rows = doc.select("td.indexTableTrailerImage");

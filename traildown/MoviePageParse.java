@@ -1,3 +1,4 @@
+package traildown;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -13,6 +14,7 @@ import net.sf.jtmdb.Movie;
 public class MoviePageParse extends HtmlParse {
 	private ArrayList<String> validResolutions = addResolutions();
 	private ArrayList<String> validTypes = addTypes();
+	private ArrayList<String> validDomains = addDomains();
 	
 	private String movieTitle;
 	private String imdbid;
@@ -23,6 +25,13 @@ public class MoviePageParse extends HtmlParse {
 		return new Film(movieTitle, imdbid, movieRelease, trailers);
 	}
 	
+	private ArrayList<String> addDomains() {
+		ArrayList<String> vDomainz = new ArrayList<String>();
+		vDomainz.add("apple");
+		vDomainz.add("yahoo");
+		return vDomainz;
+	}
+
 	public String getTitle() {
 		return movieTitle;
 	}
@@ -100,7 +109,10 @@ public class MoviePageParse extends HtmlParse {
 							t.addRes(rez, u);
 						}					
 					}
-					trailers.add(t);
+					String host = t.trailerSource();
+					if (isValidDomain(host)) {
+						trailers.add(t);
+					}
 				}
 			}		 
 		}		
@@ -109,6 +121,15 @@ public class MoviePageParse extends HtmlParse {
 	private boolean isValidType(String typeText) {
 		for (String t:validTypes) {
 			if (typeText.toLowerCase().contains(t)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private boolean isValidDomain(String host) {
+		for (String d:validDomains) {
+			if (host.toLowerCase().contains(d.toLowerCase())) {
 				return true;
 			}
 		}

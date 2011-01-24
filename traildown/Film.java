@@ -1,9 +1,11 @@
+package traildown;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -13,6 +15,47 @@ public class Film implements Serializable {
 	String imdbid;
 	Date releaseDate;
 	HashMap<Date, Trailer> trailers= new HashMap<Date, Trailer>();
+	
+	public boolean releasedAfter(Film f) {
+		if (releaseDate.after(f.releaseDate)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public ArrayList<Trailer> getAllTrailers() {
+		ArrayList<Trailer> ret = new ArrayList<Trailer>();
+		Collection<Trailer> trails = trailers.values();
+		Iterator<Trailer> tIterate = trails.iterator();
+		while (tIterate.hasNext()) {
+			ret.add(tIterate.next());
+		}
+		return ret;
+	}
+	
+	public void mergeFilms(Film f) {
+		if (f.name == this.name) {
+			this.imdbid = f.imdbid;
+			this.releaseDate = f.releaseDate;
+			Iterator<Date> tIterate = f.trailers.keySet().iterator();
+			while (tIterate.hasNext()) {
+				addTrailer(f.trailers.get(tIterate));
+			}
+		}
+	}
+	
+	public boolean releasedAfter(Date d) {
+		if (releaseDate == null) {
+//			System.out.println(name);
+			return false;
+		}
+		if (releaseDate.after(d)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 	
 	public static <T extends Comparable<? super T>> List<T> asSortedList(Collection<T> c) {
 	  List<T> list = new ArrayList<T>(c);
@@ -27,10 +70,16 @@ public class Film implements Serializable {
 		storeTrailers(trailers);
 	}
 	
-	public Trailer mostRecentTrailer(){		
+	public Film() {		
+	}
+	
+	public Trailer mostRecentTrailer(){
 		List<Date> trailerDates = asSortedList(trailers.keySet());
+		if (trailerDates.size() == 0) {
+			return null;
+		}
 		Date mostRecent = trailerDates.get(trailerDates.size()-1);
-		return trailers.get(trailerDates.get(0));
+		return trailers.get(mostRecent);
 	}
 	
 	public ArrayList<Trailer> getTrailersOnOrAfter(Date d){
@@ -51,6 +100,16 @@ public class Film implements Serializable {
 			ret.add(trailers.get(trailerDate).getUrl(rez));
 		}
 		return ret;
+	}
+	
+	public void addTrailer(Trailer trailer) {
+		Trailer t = trailers.get(trailer.trailerDate);
+		if (t == null) {
+			trailers.put(trailer.trailerDate, trailer);
+		} else {
+			t.mergeUrlsRes(trailer);
+			this.trailers.put(trailer.trailerDate, trailer);
+		}
 	}
 	
 	private void storeTrailers(ArrayList<Trailer> trailers) {

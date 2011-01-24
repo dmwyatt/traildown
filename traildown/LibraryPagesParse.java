@@ -1,3 +1,4 @@
+package traildown;
 import java.util.ArrayList;
 
 
@@ -9,6 +10,7 @@ public class LibraryPagesParse {
 		populateLibraryPages();
 		for (String libraryPageUrl:libraryPageUrls){
 			LibraryPageParse lPParse = new LibraryPageParse(libraryPageUrl);
+			System.out.printf("Fetching urls from page %s of %s\n", libraryPageUrls.indexOf(libraryPageUrl), libraryPageUrls.size());
 			movieUrls.addAll(lPParse.getMovieUrls());
 		}
 	}

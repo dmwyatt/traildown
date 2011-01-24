@@ -1,3 +1,4 @@
+package traildown;
 import java.io.IOException;
 
 import org.jsoup.Jsoup;
