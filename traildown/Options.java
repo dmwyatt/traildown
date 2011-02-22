@@ -5,9 +5,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
-
-
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
@@ -28,11 +27,12 @@ public class Options {
 		OptionSpec<Date> filmsSince = 	parser.acceptsAll(asList("d", "movierelease")).withOptionalArg().describedAs(
 										"Select films with release dates on or after the specfied date (MM/dd/yyyy).  If no date specfied defaults to today's date.").withValuesConvertedBy( 
 										datePattern( "MM/dd/yyyy" ) );
-		OptionSpec<Date> trailersSince = parser.acceptsAll(asList("n", "since")).withOptionalArg().describedAs(
-										"downloads trailers posted on or after this date.  If no arguments specfied, defaults to TODAY").withValuesConvertedBy( 
-										datePattern( "MM/dd/yyyy" ) );
 		
 		//Select these trailers from selected films
+		OptionSpec<Date> trailersSince = parser.acceptsAll(asList("n", "since")).withOptionalArg().describedAs(
+										"downloads trailers posted on or after this date.  " +
+										"If no arguments specfied, defaults to TODAY").withValuesConvertedBy( 
+										datePattern( "MM/dd/yyyy" ) );
 		OptionSpec recentOnly = 		parser.acceptsAll(asList("r", "recent"));
 		OptionSpec<String> resolution = parser.acceptsAll(asList("z", "resolution")).withRequiredArg().describedAs(
 										"downloads trailers at specified resolution (480p<default>|720p|1080p)");
@@ -56,142 +56,68 @@ public class Options {
 		
 		FilmLibrary filmLib = getFilmLib();
 		
-		System.out.println(filmLib.getFilmCount());
+		System.out.printf("Know of %s films.", filmLib.getFilmCount());
 		
 		//Update library if needed
 		if (options.has("update-library")) {
 			filmLib.updateLibrary();
 			persistFilmLibrary(filmLib);
+			System.out.printf("Now know of %s films.", filmLib.getFilmCount());
 		}
 		
-		//ArrayList to hold all our downloads
-		ArrayList<DownloadMe> dLoads = new ArrayList<DownloadMe>();
-		//ArrayList to hold all films we're going to act on
-		ArrayList<Film> filmsToProcess = new ArrayList<Film>();
+		String rez = "480p";
+		if (options.has(resolution)) {
+			rez = options.valueOf(resolution).toLowerCase();
+		} 
 		
-		//Get film by name
+		//Build list of films to pull trailers from
+		ArrayList<Film> filmList = new ArrayList<Film>();
+		
 		if (options.has(movieName)) {
-			System.out.printf("Looking for movie '%s'...\n", options.valueOf(movieName));
-			Film f = filmLib.getFilmByName(options.valueOf(movieName));
-			filmsToProcess.add(f);
-			dLoads.add(new DownloadMe(f));
+			filmList.add(filmLib.getFilmByName(options.valueOf(movieName)));
 		}
-		
-		//Get films with search text in their name
 		if (options.has(searchText)) {
-			System.out.printf("Searching for film titles containing '%s'\n", options.valueOf(searchText));
-			ArrayList<Film> searchedFilms = filmLib.getFilmsWithText(options.valueOf(searchText));
-			filmsToProcess = expandFilmList(filmsToProcess, searchedFilms);
-			for (Film f:searchedFilms) {
-				dLoads.add(new DownloadMe(f));
-			}
-						
-		}
-		
-		//Get films with trailers after specified date
-		if (options.has(trailersSince)) {
-			System.out.printf("Searching for trailers relased after %s\n", options.valueOf(trailersSince));
-			ArrayList<Film> filmsTrailersAfter = filmLib.getFilmsWithTrailersAfter(options.valueOf(trailersSince));
-			filmsToProcess = expandFilmList(filmsToProcess, filmsTrailersAfter);
-			for (Film f:filmsTrailersAfter) {
-				dLoads.add(new DownloadMe(f));
+			for (Film f:filmLib.getFilmsWithText(options.valueOf(searchText))) {
+				filmList.add(f);
 			}
 		}
-		
-		//Films after this date
 		if (options.has(filmsSince)) {
-			System.out.printf("Searching for films relased after %s\n", options.valueOf(filmsSince));
-			ArrayList<Film> filmsAfter = filmLib.getFilmsAfter(options.valueOf(filmsSince));
-			filmsToProcess = expandFilmList(filmsToProcess, filmsAfter);
-			for (Film f:filmsAfter) {
-				dLoads.add(new DownloadMe(f));
+			for (Film f:filmLib.getFilmsAfter(options.valueOf(filmsSince))) {
+				filmList.add(f);
+			}
+		}
+		if (!options.has(movieName) || !options.has(searchText) || !options.has(filmsSince)) {
+			filmList = filmLib.getFilms();
+		}
+		
+		//Check each film for trailers that match our options...
+		ArrayList<Film> filmFilteredList = new ArrayList<Film>();
+		if (options.has(trailersSince)) {
+			Date dateCheck = null;
+			if (options.valueOf(trailersSince) == null) {
+				dateCheck = Calendar.getInstance().getTime();
+			} else {
+				dateCheck = options.valueOf(trailersSince);
+			}
+			for (Film f:filmLib.getFilmsWithTrailersAfter(dateCheck)) {
+				filmFilteredList.add(f);
+			}
+			for (Film f:filmLib.getFilms()) {
+				f.downloadTrailersAfter(rez, dateCheck);
+			}
+			return options;
+		} 
+		if (options.has(recentOnly)) {
+			for (Film f:filmLib.getFilms()) {
+				f.downloadMostRecentTrailer(rez);
 			}
 		}
 		
-		System.out.println("Matched films: " + filmsToProcess.size());
+
 		
-//		//ArrayList to hold the trailers we're going to download
-//		ArrayList<Trailer> trailersToDownload = new ArrayList<Trailer>();
-//		
-//		//Only want the most recent trailer for each movie
-//		if (options.has(recentOnly)) {
-//			System.out.println("Only downloading most recent trailer for film(s)");
-//			for (Film f:filmsToProcess) {
-//				trailersToDownload.add(f.mostRecentTrailer());
-//			}
-//		}
-//		
-//		//Only want trailers since this date
-//		if (options.has(trailersSince)) {
-//			for (Film f:filmsToProcess) {
-//				ArrayList<Trailer> tDown = f.getTrailersOnOrAfter(options.valueOf(trailersSince)); 
-//				for (Trailer t:tDown) {
-//					trailersToDownload.add(t);
-//				}				
-//			}
-//		}
-//		
-//		if (!options.has(recentOnly) || !options.has(trailersSince)) {
-//			System.out.println("Downloading all trailers for each selected film");
-//			for (Film f:filmsToProcess) {
-//				ArrayList<Trailer> trailers = f.getAllTrailers();
-//				if (trailers != null) {
-//					for (Trailer t:trailers) {
-//						trailersToDownload.add(t);
-//					}
-//				}
-//			}
-//		}
-//		
-//		System.out.println("Matched trailers: " + trailersToDownload.size());
-		
-		ArrayList<DownloadMe> newDLoads = new ArrayList<DownloadMe>();
-		for (int i=dLoads.size();i>0;i--) {
-			if (options.has(recentOnly)) {
-				DownloadMe d = dLoads.get(i);
-				Trailer t = d.film.mostRecentTrailer();
-				d.trailer = t;
-				dLoads.set(i, d);
-			} else if (options.has(trailersSince)) {
-				DownloadMe d = dLoads.get(i);
-				ArrayList<> t = d.film.getTrailersOnOrAfter(options.valueOf(trailersSince));
-				
-			}
-		}
-		
-		//ArrayList to hold the urls to download
-		ArrayList<DownloadMe> downloads = new ArrayList<DownloadMe>();
-	
-		String rez = options.valueOf(resolution);
-		if (rez == null) {
-			rez = "480p";
-		}
-		System.out.printf("Selecting the %s url for each trailer\n", rez);
-		for (Trailer t:trailersToDownload) {
-			String url = t.getUrl(rez);
-			if (url == null) { 
-				continue;
-			}
-			downloads.add(new DownloadMe(url, "fake"));
-		}
-		
-		System.out.println("Matched urls to download: " + downloads.size());
-		
-		for (DownloadMe d:downloads) {
-			NameBuilder.buildFileName(f, rez, pattern)
-		}
 		
 		return options;
 		
-	}
-	
-	private static ArrayList<Film> expandFilmList(ArrayList<Film> one, ArrayList<Film> two) {
-		for (Film f:two) {
-			if (!one.contains(f)) {
-				one.add(f);
-			}
-		}
-		return one;
 	}
 	
 	private static FilmLibrary getFilmLib() {

@@ -16,6 +16,20 @@ public class Film implements Serializable {
 	Date releaseDate;
 	HashMap<Date, Trailer> trailers= new HashMap<Date, Trailer>();
 	
+	public void downloadTrailersAfter(String rez, Date date) {
+		for (Trailer t:getTrailersOnOrAfter(date)) {
+			download(rez, t);
+		}
+	}
+	
+	public void downloadMostRecentTrailer(String rez) {
+		download(rez, mostRecentTrailer());
+	}
+	
+	public void download(String rez, Trailer t) {
+		System.out.printf("Downloading trailer: (%s)(%s)(%s)", rez, t.trailerDate, name);
+	}
+	
 	public boolean releasedAfter(Film f) {
 		if (releaseDate.after(f.releaseDate)) {
 			return true;

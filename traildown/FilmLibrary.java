@@ -5,9 +5,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Set;
+
 
 
 public class FilmLibrary implements Serializable{
@@ -46,6 +49,21 @@ public class FilmLibrary implements Serializable{
 	
 	public int getFilmCount() {
 		return films.size();
+	}
+	
+	public ArrayList<Film> getFilms() {
+		ArrayList<Film> filmList = new ArrayList<Film>();
+		Collection<Film> fs = films.values();
+		Iterator<Film> filmIterate = fs.iterator();
+		while (filmIterate.hasNext()) {
+			filmList.add(filmIterate.next());
+		}
+		if (filmList.size() > 0) {
+			return filmList;
+		} else {
+			return null;
+		}
+		
 	}
 	
 	public void addFilms(ArrayList<Film> films) {

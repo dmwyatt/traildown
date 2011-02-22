@@ -8,4 +8,7 @@ public class DownloadMe {
 	String filmName;
 	String rez;
 	Date trailerDate;
+	Film f;
+	
+	
 }
